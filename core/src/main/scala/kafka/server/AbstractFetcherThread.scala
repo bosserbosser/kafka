@@ -113,6 +113,7 @@ abstract class AbstractFetcherThread(name: String,
   }
 
   private def maybeFetch(): Unit = {
+    val time1 = System.currentTimeMillis()
     val fetchRequestOpt = inLock(partitionMapLock) {
       val ResultWithPartitions(fetchRequestOpt, partitionsWithError) = leader.buildFetch(partitionStates.partitionStateMap.asScala)
 
@@ -126,9 +127,14 @@ abstract class AbstractFetcherThread(name: String,
       fetchRequestOpt
     }
 
+    val time2 = System.currentTimeMillis()
     fetchRequestOpt.foreach { case ReplicaFetch(sessionPartitions, fetchRequest) =>
       processFetchRequest(sessionPartitions, fetchRequest)
     }
+    val time3 = System.currentTimeMillis()
+    val sleepTime = 1000 * 1
+    Thread.sleep(sleepTime)
+    info(s"maybeFetch over, timeCost: ${time3-time1}, timeCost_build: ${time2-time1}, timeCost_fetch: ${time3-time2}, sleepTime: ${sleepTime}")
   }
 
   // deal with partitions with errors, potentially due to leadership changes
