@@ -134,7 +134,14 @@ abstract class AbstractFetcherThread(name: String,
     val time3 = System.currentTimeMillis()
     val sleepTime = 1000 * 1
     Thread.sleep(sleepTime)
-    info(s"maybeFetch over, timeCost: ${time3-time1}, timeCost_build: ${time2-time1}, timeCost_fetch: ${time3-time2}, sleepTime: ${sleepTime}")
+    val (partitions, topics) = fetchRequestOpt.map(
+      fetchRequest => {
+        val partitionSet: util.Set[TopicPartition] = fetchRequest.partitionData.keySet()
+        val topics: Long = partitionSet.stream().map(_.topic()).distinct().count()
+        (partitionSet.size(), topics.toInt)
+      }
+    ).getOrElse((0,0))
+    info(s"maybeFetch over, partitions: ${partitions}, topics: ${topics}, x: ${} timeCost: ${time3-time1}, timeCost_build: ${time2-time1}, timeCost_fetch: ${time3-time2}, sleepTime: ${sleepTime}")
   }
 
   // deal with partitions with errors, potentially due to leadership changes
