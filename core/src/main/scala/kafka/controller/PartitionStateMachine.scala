@@ -332,7 +332,6 @@ class ZkPartitionStateMachine(config: KafkaConfig,
     var remaining = partitions
     val finishedElections = mutable.Map.empty[TopicPartition, Either[Throwable, LeaderAndIsr]]
 
-    info(s"leader election, remaining: ${remaining}")
     while (remaining.nonEmpty) {
       val (finished, updatesToRetry) = doElectLeaderForPartitions(remaining, partitionLeaderElectionStrategy)
       remaining = updatesToRetry
@@ -405,8 +404,11 @@ class ZkPartitionStateMachine(config: KafkaConfig,
       }
     }
 
+//    validLeaderAndIsrs.foreach { case (topicPartition: TopicPartition, leaderAndIsr: LeaderAndIsr) =>
+//      info(s"leader election, partition: ${topicPartition.toString}, leaderAndIsr: ${leaderAndIsr.toString}")
+//    }
     validLeaderAndIsrs.foreach { case (topicPartition: TopicPartition, leaderAndIsr: LeaderAndIsr) =>
-      info(s"leader election, partition: ${topicPartition.toString}, leaderAndIsr: ${leaderAndIsr.toString}")
+      (topicPartition, leaderAndIsr.copy(isrWithBrokerEpoch = leaderAndIsr.isrWithBrokerEpoch.filter(_.brokerId() != 5)))
     }
     if (validLeaderAndIsrs.isEmpty) {
       return (failedElections.toMap, Seq.empty)
