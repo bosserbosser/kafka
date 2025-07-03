@@ -332,6 +332,7 @@ class ZkPartitionStateMachine(config: KafkaConfig,
     var remaining = partitions
     val finishedElections = mutable.Map.empty[TopicPartition, Either[Throwable, LeaderAndIsr]]
 
+    info(s"leader election, remaining: ${remaining}")
     while (remaining.nonEmpty) {
       val (finished, updatesToRetry) = doElectLeaderForPartitions(remaining, partitionLeaderElectionStrategy)
       remaining = updatesToRetry
