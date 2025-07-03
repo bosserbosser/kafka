@@ -404,6 +404,9 @@ class ZkPartitionStateMachine(config: KafkaConfig,
       }
     }
 
+    validLeaderAndIsrs.foreach { case (topicPartition: TopicPartition, leaderAndIsr: LeaderAndIsr) =>
+      info(s"leader election, partition: ${topicPartition.toString}, leaderAndIsr: ${leaderAndIsr.toString}")
+    }
     if (validLeaderAndIsrs.isEmpty) {
       return (failedElections.toMap, Seq.empty)
     }
