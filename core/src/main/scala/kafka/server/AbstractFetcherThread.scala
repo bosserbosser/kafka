@@ -128,7 +128,7 @@ abstract class AbstractFetcherThread(name: String,
     }
 
     val time2 = System.currentTimeMillis()
-    fetchRequestOpt.foreach { case ReplicaFetch(sessionPartitions, fetchRequest) =>
+    val responseDataOpt: Option[Map[TopicPartition, FetchData]] = fetchRequestOpt.map { case ReplicaFetch(sessionPartitions, fetchRequest) =>
       processFetchRequest(sessionPartitions, fetchRequest)
     }
     val time3 = System.currentTimeMillis()
@@ -141,7 +141,15 @@ abstract class AbstractFetcherThread(name: String,
         (partitionSet.size(), topics.toInt)
       }
     ).getOrElse((0,0))
-    info(s"maybeFetch over, partitions: ${partitions}, topics: ${topics}, timeCost: ${time3-time1}, timeCost_build: ${time2-time1}, timeCost_fetch: ${time3-time2}, sleepTime: ${sleepTime}")
+    val topicSizeMap: Map[String, Int] = responseDataOpt.map(
+      responseData => {
+        responseData.toSeq.map { case (topicPartition, fetchData) =>
+          (topicPartition.topic(), fetchData.records().sizeInBytes())
+        }.groupBy(_._1).view.mapValues(pairs => pairs.map(_._2).sum).toMap
+      }
+    ).getOrElse(Map.empty)
+
+    info(s"maybeFetch over, partitions: ${partitions}, topics: ${topics}, timeCost: ${time3-time1}, timeCost_build: ${time2-time1}, timeCost_fetch: ${time3-time2}, sleepTime: ${sleepTime}, topicSizeMap: ${topicSizeMap}")
   }
 
   // deal with partitions with errors, potentially due to leadership changes
@@ -319,7 +327,7 @@ abstract class AbstractFetcherThread(name: String,
   }
 
   private def processFetchRequest(sessionPartitions: util.Map[TopicPartition, FetchRequest.PartitionData],
-                                  fetchRequest: FetchRequest.Builder): Unit = {
+                                  fetchRequest: FetchRequest.Builder): Map[TopicPartition, FetchData] = {
     val partitionsWithError = mutable.Set[TopicPartition]()
     val divergingEndOffsets = mutable.Map.empty[TopicPartition, EpochEndOffset]
     var responseData: Map[TopicPartition, FetchData] = Map.empty
@@ -463,6 +471,8 @@ abstract class AbstractFetcherThread(name: String,
     if (partitionsWithError.nonEmpty) {
       handlePartitionsWithErrors(partitionsWithError, "processFetchRequest")
     }
+
+    responseData
   }
 
   /**
