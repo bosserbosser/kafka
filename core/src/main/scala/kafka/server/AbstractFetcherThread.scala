@@ -47,6 +47,7 @@ import scala.collection.{Map, Set, mutable}
 import scala.compat.java8.OptionConverters._
 import scala.jdk.CollectionConverters._
 import scala.math._
+import scala.util.Try
 
 /**
  * Abstract class for fetching data from multiple partitions from the same broker.
@@ -132,8 +133,7 @@ abstract class AbstractFetcherThread(name: String,
       processFetchRequest(sessionPartitions, fetchRequest)
     }
     val time3 = System.currentTimeMillis()
-    val sleepTime = 1000 * 1
-    Thread.sleep(sleepTime)
+
     val (partitions, topics) = fetchRequestOpt.map(
       fetchRequest => {
         val partitionSet: util.Set[TopicPartition] = fetchRequest.partitionData.keySet()
@@ -144,12 +144,14 @@ abstract class AbstractFetcherThread(name: String,
     val topicSizeMap: Map[String, Int] = responseDataOpt.map(
       responseData => {
         responseData.toSeq.map { case (topicPartition, fetchData) =>
-          (topicPartition.topic(), fetchData.records().sizeInBytes())
+          (topicPartition.topic(), if (fetchData.records() != null) fetchData.records().sizeInBytes() else 0)
         }.groupBy(_._1).view.mapValues(pairs => pairs.map(_._2).sum).toMap
       }
     ).getOrElse(Map.empty)
-
-    info(s"maybeFetch over, partitions: ${partitions}, topics: ${topics}, timeCost: ${time3-time1}, timeCost_build: ${time2-time1}, timeCost_fetch: ${time3-time2}, sleepTime: ${sleepTime}, topicSizeMap: ${topicSizeMap}")
+    val fetchSizeTotal = topicSizeMap.values.sum
+    val sleepTime = 1000 * 10
+    info(s"maybeFetch over, name: ${name}, partitions: ${partitions}, topics: ${topics}, timeCost: ${time3-time1}, timeCost_build: ${time2-time1}, timeCost_fetch: ${time3-time2}, sleepTime: ${sleepTime}, fetchSizeTotal: ${fetchSizeTotal}, topicSizeMap: ${topicSizeMap}")
+    Try { Thread.sleep(sleepTime) }.foreach(_ =>{})
   }
 
   // deal with partitions with errors, potentially due to leadership changes
