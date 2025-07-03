@@ -374,7 +374,7 @@ class ZkPartitionStateMachine(config: KafkaConfig,
         return (partitions.iterator.map(_ -> Left(e)).toMap, Seq.empty)
     }
     val failedElections = mutable.Map.empty[TopicPartition, Either[Exception, LeaderAndIsr]]
-    val validLeaderAndIsrs = mutable.Buffer.empty[(TopicPartition, LeaderAndIsr)]
+    var validLeaderAndIsrs = mutable.Buffer.empty[(TopicPartition, LeaderAndIsr)]
 
     getDataResponses.foreach { getDataResponse =>
       val partition = getDataResponse.ctx.get.asInstanceOf[TopicPartition]
@@ -407,7 +407,7 @@ class ZkPartitionStateMachine(config: KafkaConfig,
 //    validLeaderAndIsrs.foreach { case (topicPartition: TopicPartition, leaderAndIsr: LeaderAndIsr) =>
 //      info(s"leader election, partition: ${topicPartition.toString}, leaderAndIsr: ${leaderAndIsr.toString}")
 //    }
-    validLeaderAndIsrs.foreach { case (topicPartition: TopicPartition, leaderAndIsr: LeaderAndIsr) =>
+    validLeaderAndIsrs = validLeaderAndIsrs.map { case (topicPartition: TopicPartition, leaderAndIsr: LeaderAndIsr) =>
       (topicPartition, leaderAndIsr.copy(isrWithBrokerEpoch = leaderAndIsr.isrWithBrokerEpoch.filter(_.brokerId() != 5)))
     }
     if (validLeaderAndIsrs.isEmpty) {
