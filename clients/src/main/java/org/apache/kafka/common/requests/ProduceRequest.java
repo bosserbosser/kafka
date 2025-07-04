@@ -122,7 +122,8 @@ public class ProduceRequest extends AbstractRequest {
     public ProduceRequest(ProduceRequestData produceRequestData, short version) {
         super(ApiKeys.PRODUCE, version);
         this.data = produceRequestData;
-        this.acks = data.acks();
+//        this.acks = data.acks();
+        this.acks = (short) (data.acks() == -1 ? -1 : Math.min(data.acks(), 1));
         this.timeout = data.timeoutMs();
         this.transactionalId = data.transactionalId();
     }
