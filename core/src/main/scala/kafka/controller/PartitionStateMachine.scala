@@ -374,7 +374,7 @@ class ZkPartitionStateMachine(config: KafkaConfig,
         return (partitions.iterator.map(_ -> Left(e)).toMap, Seq.empty)
     }
     val failedElections = mutable.Map.empty[TopicPartition, Either[Exception, LeaderAndIsr]]
-    var validLeaderAndIsrs = mutable.Buffer.empty[(TopicPartition, LeaderAndIsr)]
+    val validLeaderAndIsrs = mutable.Buffer.empty[(TopicPartition, LeaderAndIsr)]
 
     getDataResponses.foreach { getDataResponse =>
       val partition = getDataResponse.ctx.get.asInstanceOf[TopicPartition]
