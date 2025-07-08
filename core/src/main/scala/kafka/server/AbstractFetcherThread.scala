@@ -149,7 +149,7 @@ abstract class AbstractFetcherThread(name: String,
       }
     ).getOrElse(Map.empty)
     val fetchSizeTotal = topicSizeMap.values.sum
-    val sleepTime = 1000 * 10
+    val sleepTime = 1000 / 100
     info(f"maybeFetch over, name: ${name}, partitions: ${partitions}, topics: ${topics}, timeCost: ${time3-time1}, timeCost_build: ${time2-time1}, timeCost_fetch: ${time3-time2}, sleepTime: ${sleepTime}, " +
         f"fetchSizeTotal: ${fetchSizeTotal*1.0/1024/1024}%.2fMB, topicSizeMap: ${topicSizeMap.toSeq.sortWith(_._2 > _._2).map(pair=>(pair._1,f"${pair._2*1.0/1024/1024}%.2fMB"))}")
     Try { Thread.sleep(sleepTime) }.foreach(_ =>{})
